@@ -28,11 +28,25 @@ module ResquePause
         mime_type :json, 'application/json'
 
         get '/pause' do
-          erb File.read(ResquePause::Server.erb_path('pause.erb'))
+          request.accept.each do |type|
+            case type
+            when /json/
+              hash = Hash[resque.queues.map{|q| [q, ResquePauseHelper.paused?(q)]}]
+              content_type :json
+              halt(hash.to_json)
+            else
+              html = erb(File.read(ResquePause::Server.erb_path('pause.erb')))
+              halt(html)
+            end
+          end
         end
 
         post '/pause' do
-          pause = params['pause'] == "true"
+          if /json/ =~ request.content_type
+            hash = MultiJson.load(request.body.read.to_s)
+            params.merge!(hash)
+          end
+          pause = params['pause'].to_s == "true"
 
           unless params['queue_name'].empty?
             if pause
