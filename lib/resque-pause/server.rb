@@ -42,6 +42,7 @@ module ResquePause
         end
 
         post '/pause' do
+
           if /json/ =~ request.content_type
             hash = MultiJson.load(request.body.read.to_s)
             params.merge!(hash)
